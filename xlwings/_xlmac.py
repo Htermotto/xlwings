@@ -674,6 +674,149 @@ class Range(object):
             return self.xl.select()
 
 
+class PivotTables(object):
+
+    def __init__(self, sheet):
+        self.sheet = sheet
+
+    @property
+    def api(self):
+        return None
+
+    def __len__(self):
+        return self.sheet.api.count(each=kw.pivot_table)
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self(i+1)
+
+    def add(self, src_range, dest_range, row_fields=[], column_fields=[],
+            page_fields=[], data_fields=[], row_grand=True, column_grand=True):
+
+        pt = sheet.api.make(new=kw.pivot_table,
+            with_properties={
+                kw.source_data: src_range.api,
+                kw.row_grand: row_grand,
+                kw.column_grand: column_grand
+            })
+
+        pt.row_fields = row_fields
+        pt.column_fields = column_fields
+        pt.page_fields = page_fields
+        pt.data_fields = data_fields
+
+        return PivotTable(self.sheet, pt)
+
+class PivotTable(object):
+
+    def init(self, sheet, pivot_table_xl):
+        self.sheet = sheet
+        self.xl = pivot_table_xl
+
+    @property
+    def sheet(self):
+        return self.sheet
+
+    @property
+    def api(self):
+        return self.xl
+
+    @property
+    def name(self):
+        return self.xl.name.get()
+
+    @name.setter
+    def name(self, value):
+        self.xl.name.set(value)
+
+    @property
+    def row_fields(self):
+        return _get_fields('ROW')
+
+    @row_fields.setter
+    def row_fields(self, values):
+        ''' Takes in a list of field names '''
+        self._set_fields(values, 'ROW')
+
+    def add_row_field(self, field_name):
+        self._add_fields([field_name], 'ROW')
+
+    @property
+    def column_fields(self):
+        return self._get_fields('COLUMN')
+
+    @column_fields.setter
+    def column_fields(self, values):
+        self._set_fields(values, 'COLUMN')
+
+    def add_column_field(self, field_name):
+        self._add_fields([field_name], 'COLUMN')
+
+    @property
+    def page_fields(self):
+        return self._get_fields('PAGE')
+
+    @page_fields.setter
+    def page_fields(self, values):
+        self._set_fields(values, 'PAGE')
+
+    def add_page_field(self, field_name):
+        self._add_fields([field_name], 'PAGE')
+
+    @property
+    def data_fields(self):
+        return self._get_fields('DATA')
+
+    @data_fields.setter
+    def data_fields(self, values):
+        self._set_fields(values, 'DATA')
+
+    def add_data_field(self, field_name):
+        self._add_fields([field_name], 'DATA')
+
+    def _get_fields(self, orientation):
+        if orientation == 'ROW':
+            xlFields = self.xl.row_fields()
+        elif orientation == 'COLUMN':
+            xlFields = self.xl.column_fields()
+        elif orientation == 'DATA'
+            xlFields = self.xl.data_fields()
+        else:
+            xlFields = self.xl.page_fields()
+
+        return [field.name() for field in xlFields]
+
+    def _set_fields(self, values, orienation):
+        self._hide_all_fields(orientation)
+        self._add_fields(self, values, orienation)
+
+    def _add_fields(self, values, orientation):
+        new_fields = self._get_fields(orientation) + values
+        if orientation == 'ROW':
+            self.xl.add_fields_to_pivot_table(self.xl, row_fields=new_fields)
+        elif orientation == 'COLUMN'
+            self.xl.add_fields_to_pivot_table(self.xl, column_fields=new_fields)
+        elif orientation == 'DATA':
+            self.xl.add_fields_to_pivot_table(self.xl, data_fields=new_fields)
+        elif orientation == 'PAGE':
+            self.xl.add_fields_to_pivot_table(self.xl, page_fields=new_fields)
+        #else:
+            #Throw error here or do nothing?
+
+    def hide_field(self, field_name):
+        for field in self.xl.pivot_fields():
+            if field.name() == field_name:
+                field.pivot_field_orientation.set(0)
+
+    def _hide_all_fields(self, orientation):
+        for field in _get_fields(orientation):
+            field.pivot_field_orientation.set(0)
+
+
+
+
+
+
 class Shape(object):
     def __init__(self, parent, key):
         self.parent = parent
