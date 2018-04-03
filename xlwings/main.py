@@ -474,10 +474,10 @@ class Book(object):
                             candidates.append((app, wb))
 
                 app = apps.active
-                if len(candidates) == 0:                    
+                if len(candidates) == 0:
                     if not app:
                         app = App(add_book=False)
-                    impl = app.books.open(fullname).impl                                     
+                    impl = app.books.open(fullname).impl
                 elif len(candidates) > 1:
                     raise Exception("Workbook '%s' is open in more than one Excel instance." % fullname)
                 else:
@@ -1862,6 +1862,112 @@ class RangeColumns(Ranges):
         )
 
 
+class PivotTables(Collection):
+
+    def __init__(self, sheet):
+        self.sheet = sheet
+
+    @property
+    def api(self):
+        return None
+
+    def __len__(self):
+        return self.sheet.api.count(each=kw.pivot_table)
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield PivotTable(self.sheet, self.sheet.api.pivot_tables[i+1])
+
+    def add(self, src_range, dest_range, row_fields=[], column_fields=[],
+            page_fields=[], data_fields=[], row_grand=True, column_grand=True):
+
+        xlpt = sheet.api.make(new=kw.pivot_table,
+            with_properties={
+                kw.source_data: src_range.api,
+                kw.row_grand: row_grand,
+                kw.column_grand: column_grand
+            })
+
+        pt = PivotTable(self.sheet, xlpt)
+        pt.row_fields = row_fields
+        pt.column_fields = column_fields
+        pt.page_fields = page_fields
+        pt.data_fields = data_fields
+
+        # Change to index in self.sheet.api.pivot_tables[index]?
+        return pt
+
+class PivotTable(object):
+
+    def __init__(self, sheet, pivot_table_xl):
+        self.xlsheet = sheet
+        self.impl = pivot_table_xl
+
+    @property
+    def sheet(self):
+        return self.xlsheet
+
+    @property
+    def api(self):
+        return self.impl.api
+
+    @property
+    def name(self):
+        return self.impl.name
+
+    @name.setter
+    def name(self, value):
+        self.impl.name = value
+
+    @property
+    def row_fields(self):
+        return self.impl.row_fields
+
+    @row_fields.setter
+    def row_fields(self, values):
+        ''' Takes in a list of field names '''
+        self.impl.row_fields = values
+
+    def add_row_field(self, field_name):
+        self.impl.add_row_field(field_name)
+
+    @property
+    def column_fields(self):
+        return self.impl.column_fields
+
+    @column_fields.setter
+    def column_fields(self, values):
+        self.impl.column_fields = values
+
+    def add_column_field(self, field_name):
+        self.impl.add_column_field(field_name)
+
+    @property
+    def page_fields(self):
+        return self.impl.page_fields
+
+    @page_fields.setter
+    def page_fields(self, values):
+        self.impl.page_fields = values
+
+    def add_page_field(self, field_name):
+        self.add_page_field(field_name)
+
+    @property
+    def data_fields(self):
+        return self.data_fields
+
+    @data_fields.setter
+    def data_fields(self, values):
+        self.data_fields = values
+
+    def add_data_field(self, field_name):
+        self.add_data_field(field_name)
+
+    def hide_field(self, field_name):
+        self.impl.hide_field(field_name)
+
+
 class Shape(object):
     """
     The shape object is a member of the :meth:`shapes <xlwings.main.Shapes>` collection:
@@ -2643,7 +2749,7 @@ class Name(object):
 
     def __repr__(self):
         return "<Name '%s': %s>" % (self.name, self.refers_to)
-    
+
 
 def view(obj, sheet=None):
     """
@@ -2731,7 +2837,7 @@ class Books(Collection):
         -------
         Book : Book that has been opened.
 
-        """       
+        """
         if not os.path.exists(fullname):
             if PY3:
                 raise FileNotFoundError("No such file: '%s'" % fullname)
@@ -2739,7 +2845,7 @@ class Books(Collection):
                 raise IOError("No such file: '%s'" % fullname)
         fullname = os.path.realpath(fullname)
         _, name = os.path.split(fullname)
-        try:            
+        try:
             impl = self.impl(name)
             # on windows, samefile only available on Py>=3.2
             if hasattr(os.path, 'samefile'):

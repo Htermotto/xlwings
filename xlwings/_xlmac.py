@@ -408,6 +408,10 @@ class Sheet(object):
     def pictures(self):
         return Pictures(self)
 
+    @property
+    def pivot_tables(self):
+        return PivotTables(self)
+
 
 class Range(object):
 
@@ -688,34 +692,36 @@ class PivotTables(object):
 
     def __iter__(self):
         for i in range(len(self)):
-            yield self(i+1)
+            yield PivotTable(self.sheet, self.sheet.api.pivot_tables[i+1])
 
     def add(self, src_range, dest_range, row_fields=[], column_fields=[],
             page_fields=[], data_fields=[], row_grand=True, column_grand=True):
 
-        pt = sheet.api.make(new=kw.pivot_table,
+        xlpt = sheet.api.make(new=kw.pivot_table,
             with_properties={
                 kw.source_data: src_range.api,
                 kw.row_grand: row_grand,
                 kw.column_grand: column_grand
             })
 
+        pt = PivotTable(self.sheet, xlpt)
         pt.row_fields = row_fields
         pt.column_fields = column_fields
         pt.page_fields = page_fields
         pt.data_fields = data_fields
 
-        return PivotTable(self.sheet, pt)
+        # Change to index in self.sheet.api.pivot_tables
+        return pt
 
 class PivotTable(object):
 
-    def init(self, sheet, pivot_table_xl):
-        self.sheet = sheet
+    def __init__(self, sheet, pivot_table_xl):
+        self.xlsheet = sheet
         self.xl = pivot_table_xl
 
     @property
     def sheet(self):
-        return self.sheet
+        return self.xlsheet
 
     @property
     def api(self):
@@ -779,7 +785,7 @@ class PivotTable(object):
             xlFields = self.xl.row_fields()
         elif orientation == 'COLUMN':
             xlFields = self.xl.column_fields()
-        elif orientation == 'DATA'
+        elif orientation == 'DATA':
             xlFields = self.xl.data_fields()
         else:
             xlFields = self.xl.page_fields()
@@ -794,14 +800,15 @@ class PivotTable(object):
         new_fields = self._get_fields(orientation) + values
         if orientation == 'ROW':
             self.xl.add_fields_to_pivot_table(self.xl, row_fields=new_fields)
-        elif orientation == 'COLUMN'
+        elif orientation == 'COLUMN':
             self.xl.add_fields_to_pivot_table(self.xl, column_fields=new_fields)
         elif orientation == 'DATA':
             self.xl.add_fields_to_pivot_table(self.xl, data_fields=new_fields)
         elif orientation == 'PAGE':
             self.xl.add_fields_to_pivot_table(self.xl, page_fields=new_fields)
-        #else:
-            #Throw error here or do nothing?
+        else:
+            raise Exception("Invalid field orientation given. Acceptable " +
+                            "values: ROW, COLUMN, DATA, PAGE")
 
     def hide_field(self, field_name):
         for field in self.xl.pivot_fields():
@@ -811,11 +818,6 @@ class PivotTable(object):
     def _hide_all_fields(self, orientation):
         for field in _get_fields(orientation):
             field.pivot_field_orientation.set(0)
-
-
-
-
-
 
 class Shape(object):
     def __init__(self, parent, key):
