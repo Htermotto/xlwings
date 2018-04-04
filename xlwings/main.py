@@ -920,6 +920,10 @@ class Sheet(object):
         else:
             return self.cells[item]
 
+    @property
+    def pivot_tables(self):
+        return self.impl.pivot_tables
+
 
 class Range(object):
     """
