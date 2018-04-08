@@ -922,7 +922,7 @@ class Sheet(object):
 
     @property
     def pivot_tables(self):
-        return self.impl.pivot_tables
+        return PivotTables(self.impl.pivot_tables)
 
 
 class Range(object):
@@ -1866,50 +1866,14 @@ class RangeColumns(Ranges):
         )
 
 
-class PivotTables(Collection):
-
-    def __init__(self, sheet):
-        self.sheet = sheet
-
-    @property
-    def api(self):
-        return None
-
-    def __len__(self):
-        return self.sheet.api.count(each=kw.pivot_table)
-
-    def __iter__(self):
-        for i in range(len(self)):
-            yield PivotTable(self.sheet, self.sheet.api.pivot_tables[i+1])
-
-    def add(self, src_range, dest_range, row_fields=[], column_fields=[],
-            page_fields=[], data_fields=[], row_grand=True, column_grand=True):
-
-        xlpt = sheet.api.make(new=kw.pivot_table,
-            with_properties={
-                kw.source_data: src_range.api,
-                kw.row_grand: row_grand,
-                kw.column_grand: column_grand
-            })
-
-        pt = PivotTable(self.sheet, xlpt)
-        pt.row_fields = row_fields
-        pt.column_fields = column_fields
-        pt.page_fields = page_fields
-        pt.data_fields = data_fields
-
-        # Change to index in self.sheet.api.pivot_tables[index]?
-        return pt
-
 class PivotTable(object):
 
-    def __init__(self, sheet, pivot_table_xl):
-        self.xlsheet = sheet
-        self.impl = pivot_table_xl
+    def __init__(self, impl):
+        self.impl = impl
 
     @property
     def sheet(self):
-        return self.xlsheet
+        return self.impl.xlsheet
 
     @property
     def api(self):
@@ -1971,6 +1935,25 @@ class PivotTable(object):
     def hide_field(self, field_name):
         self.impl.hide_field(field_name)
 
+    def delete(self):
+        self.impl.delete()
+
+class PivotTables(Collection):
+
+    _wrap = PivotTable
+
+    def __init__(self, impl):
+        self.impl = impl
+
+    @property
+    def api(self):
+        return None
+
+    def add(self, src_range, dest_range, row_fields=[], column_fields=[],
+            page_fields=[], data_fields=[], row_grand=True, column_grand=True):
+
+        return self.impl.add(src_range, dest_range, row_fields, column_fields,
+                        page_fields, data_fields, row_grand, column_grand)
 
 class Shape(object):
     """
