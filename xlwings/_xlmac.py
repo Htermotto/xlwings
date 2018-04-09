@@ -984,7 +984,19 @@ class PivotTable(object):
                       'COLUMN': kw.orient_as_column_field,
                       'DATA': kw.orient_as_data_field,
                       'PAGE': kw.orient_as_page_field
-                      }
+                     }
+
+    KW_DATA_FUNCTIONS = {'MAX': kw.do_maximum,
+                         'MIN': kw.do_minimum,
+                         'STD_DEV': kw.do_standard_deviation,
+                         'STD_DEV_P': kw.do_standard_deviation_p,
+                         'VAR': kw.do_var,
+                         'VAR_P': kw.do_var_p,
+                         'COUNT_NUMS': kw.do_count_numbers,
+                         'COUNT': kw.do_count,
+                         'PRODUCT': kw.do_product,
+                         'SUM': kw.do_sum
+                        }
 
     def __init__(self, sheet, name_or_index):
         self.xlsheet = sheet
@@ -1049,8 +1061,15 @@ class PivotTable(object):
     def data_fields(self, values):
         self._set_fields(values, 'DATA')
 
-    def add_data_field(self, field_name):
+    def add_data_field(self, field_name, data_func=None):
         self._add_fields([field_name], 'DATA')
+        if data_func:
+            if data_func in self.KW_DATA_FUNCTIONS:
+                #TODO: Should adding an already existing data field
+                # with a different function remove the existing one?
+                self.xl.data_fields[-1].function.set(self.KW_DATA_FUNCTIONS[data_func])
+            else:
+                raise Exception("Invalid function %s for data field." % data_func)
 
     def _get_fields(self, orientation):
         if orientation == 'ROW':
@@ -1072,14 +1091,16 @@ class PivotTable(object):
         self._add_fields(values, orientation)
 
     def _add_fields(self, values, orientation):
+        #TODO: Why can't we just use values?
         new_fields = self._get_fields(orientation) + values
         for field_name in new_fields:
             self.xl.pivot_fields[field_name].pivot_field_orientation.set(PivotTable.KW_ORIENTATION[orientation])
 
     def hide_field(self, field_name):
-        for field in self.xl.pivot_fields():
+        for field in self.xl.pivot_fields() + self.xl.data_fields():
             if field.name() == field_name:
                 field.pivot_field_orientation.set(kw.orient_as_hidden)
+                return
 
     def _hide_all_fields(self, orientation):
         for field_name in self._get_fields(orientation):
@@ -1134,15 +1155,19 @@ class PivotTables(Collection):
     def add(self, src_range, dest_range, row_fields=[], column_fields=[],
             page_fields=[], data_fields=[], row_grand=True, column_grand=True):
 
-        xlpt = self.sheet.api.make(
-            new=kw.pivot_table, at=self.sheet.api,
+        # Workaround until at argument of make is figured out.
+        # Pivot table gets created at selected cell.
+        dest_range.select()
+
+        xlpt = self.parent.api.make(
+            new=kw.pivot_table, at=self.parent.api,
             with_properties={
                 kw.source_data: src_range.api,
                 kw.row_grand: row_grand,
                 kw.column_grand: column_grand
             })
 
-        pt = PivotTable(self.sheet, xlpt.name.get())
+        pt = PivotTable(self.parent, xlpt.name.get())
         pt.row_fields = row_fields
         pt.column_fields = column_fields
         pt.page_fields = page_fields

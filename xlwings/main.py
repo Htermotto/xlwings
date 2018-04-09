@@ -1929,8 +1929,8 @@ class PivotTable(object):
     def data_fields(self, values):
         self.data_fields = values
 
-    def add_data_field(self, field_name):
-        self.add_data_field(field_name)
+    def add_data_field(self, field_name, data_func=None):
+        self.impl.add_data_field(field_name, data_func)
 
     def hide_field(self, field_name):
         self.impl.hide_field(field_name)
