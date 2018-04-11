@@ -14,9 +14,8 @@ class test_pivot_table(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.app1 = xw.App(visible=False, spec=SPEC)
-		cls.wb = test_pivot_table.app1.books.open(test_sheet)
+		cls.wb = cls.app1.books.open(test_sheet)
 		cls.sht = cls.wb.sheets[0]
-
 
 	def setUp(self):
 		self.pts = test_pivot_table.sht.pivot_tables
@@ -86,6 +85,10 @@ class test_pivot_table(unittest.TestCase):
 	def test_delete(self):
 		self.pt.delete()
 		self.assertEqual(0, len(self.pts))
+
+	def test_hide_field(self):
+		self.pt.hide_field('Age')
+		assert 'Age' not in self.pt.column_fields
 
 
 if __name__ == '__main__':
