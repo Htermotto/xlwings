@@ -990,6 +990,7 @@ class PivotTable(object):
                          'MIN': kw.do_minimum,
                          'STD_DEV': kw.do_standard_deviation,
                          'STD_DEV_P': kw.do_standard_deviation_p,
+                         'AVERAGE': kw.do_average,
                          'VAR': kw.do_var,
                          'VAR_P': kw.do_var_p,
                          'COUNT_NUMS': kw.do_count_numbers,
@@ -1173,7 +1174,6 @@ class PivotTables(Collection):
         pt.page_fields = page_fields
         pt.data_fields = data_fields
 
-        # Change to index in self.sheet.api.pivot_tables
         return pt
 
 

@@ -3,6 +3,7 @@ sys.path.append(r'/Users/Harrison/anaconda3/envs/XLWingsDev/xlwings/')
 import xlwings as xw
 from xlwings.tests.common import TestBase, this_dir
 import unittest
+from parameterized import parameterized
 
 test_sheet = 'test_pivot.xlsx'
 SPEC = '/Applications/Microsoft Office 2011/Microsoft Excel.app'
@@ -13,12 +14,14 @@ class test_pivot_table(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.app1 = xw.App(visible=False, spec=SPEC)
+		cls.wb = test_pivot_table.app1.books.open(test_sheet)
+		cls.sht = cls.wb.sheets[0]
+
 
 	def setUp(self):
-		self.wb = test_pivot_table.app1.books.open(test_sheet)
-		self.pts = self.wb.sheets[0].pivot_tables
-		src_range = self.wb.sheets[0].range('A1').expand()
-		dest_range = self.wb.sheets[0].range('E5').expand()
+		self.pts = test_pivot_table.sht.pivot_tables
+		src_range = test_pivot_table.sht.range('A1').expand()
+		dest_range = test_pivot_table.sht.range('E5').expand()
 
 		self.assertEqual(0, len(self.pts))
 		self.pt = self.pts.add(src_range, xw.Range('E5'),
@@ -33,13 +36,6 @@ class test_pivot_table(unittest.TestCase):
 	@classmethod
 	def tearDownClass(cls):
 		test_pivot_table.app1.quit()
-
-				# def test_pivot_table_dest(self):
-				# 	pass
-                #
-
-				# def test_pivot_table_src(self):
-				# 	pass
 
 	def test_name(self):
 		prev_name = self.pt.name
@@ -77,11 +73,15 @@ class test_pivot_table(unittest.TestCase):
 		self.pt.add_page_field('Arg1')
 		self.assertEqual(['Arg1'], self.pt.page_fields)
 
-	def test_edit_data_field(self):
+	@parameterized.expand([('Sum of Arg2', 'SUM'), ('Count of Arg2', 'COUNT'),
+					('Average of Arg2', 'AVERAGE'), ('StdDev of Arg2', 'STD_DEV'),
+					('StdDevp of Arg2', 'STD_DEV_P'), ('Var of Arg2', 'VAR'),
+					('Varp of Arg2', 'VAR_P'), ('Count of Arg2', 'COUNT_NUMS')])
+	def test_edit_data_field(self, data_field_string, data_field_func):
 		self.pt.hide_field('Sum of Arg2')
 		self.assertEqual([], self.pt.data_fields)
-		self.pt.add_data_field('Arg2', 'SUM')
-		self.assertEqual(['Sum of Arg2'], self.pt.data_fields)
+		self.pt.add_data_field('Arg2', data_field_func)
+		self.assertEqual([data_field_string], self.pt.data_fields)
 
 	def test_delete(self):
 		self.pt.delete()
