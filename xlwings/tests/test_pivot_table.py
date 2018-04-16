@@ -82,6 +82,9 @@ class test_pivot_table(unittest.TestCase):
 		self.pt.add_data_field('Arg2', data_field_func)
 		self.assertEqual([data_field_string], self.pt.data_fields)
 
+		self.pt.hide_field(data_field_string)
+		self.assertEqual([], self.pt.data_fields)
+
 	def test_delete(self):
 		self.pt.delete()
 		self.assertEqual(0, len(self.pts))
@@ -89,6 +92,21 @@ class test_pivot_table(unittest.TestCase):
 	def test_hide_field(self):
 		self.pt.hide_field('Age')
 		assert 'Age' not in self.pt.column_fields
+
+		self.pt.hide_field('Sum of Arg2')
+		assert 'Sum of Arg2' not in self.pt.data_fields
+
+	def set_row_fields(self):
+		pass
+
+	def set_column_fields(self):
+		pass
+
+	def set_page_fields(self):
+		pass
+
+	def set_data_fields(self):
+		pass
 
 
 if __name__ == '__main__':

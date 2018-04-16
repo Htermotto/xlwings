@@ -980,12 +980,6 @@ class Pictures(Collection):
 
 class PivotTable(object):
 
-    KW_ORIENTATION = {'ROW': kw.orient_as_row_field,
-                      'COLUMN': kw.orient_as_column_field,
-                      'DATA': kw.orient_as_data_field,
-                      'PAGE': kw.orient_as_page_field
-                     }
-
     KW_DATA_FUNCTIONS = {'MAX': kw.do_maximum,
                          'MIN': kw.do_minimum,
                          'STD_DEV': kw.do_standard_deviation,
@@ -1022,48 +1016,48 @@ class PivotTable(object):
 
     @property
     def row_fields(self):
-        return self._get_fields('ROW')
+        return self._get_fields(kw.orient_as_row_field)
 
     @row_fields.setter
     def row_fields(self, values):
         ''' Takes in a list of field names '''
-        self._set_fields(values, 'ROW')
+        self._set_fields(values, kw.orient_as_row_field)
 
     def add_row_field(self, field_name):
-        self._add_fields([field_name], 'ROW')
+        self._add_fields([field_name], kw.orient_as_row_field)
 
     @property
     def column_fields(self):
-        return self._get_fields('COLUMN')
+        return self._get_fields(kw.orient_as_column_field)
 
     @column_fields.setter
     def column_fields(self, values):
-        self._set_fields(values, 'COLUMN')
+        self._set_fields(values, kw.orient_as_column_field)
 
     def add_column_field(self, field_name):
-        self._add_fields([field_name], 'COLUMN')
+        self._add_fields([field_name], kw.orient_as_column_field)
 
     @property
     def page_fields(self):
-        return self._get_fields('PAGE')
+        return self._get_fields(kw.orient_as_page_field)
 
     @page_fields.setter
     def page_fields(self, values):
-        self._set_fields(values, 'PAGE')
+        self._set_fields(values, kw.orient_as_page_field)
 
     def add_page_field(self, field_name):
-        self._add_fields([field_name], 'PAGE')
+        self._add_fields([field_name], kw.orient_as_page_field)
 
     @property
     def data_fields(self):
-        return self._get_fields('DATA')
+        return self._get_fields(kw.orient_as_data_field)
 
     @data_fields.setter
     def data_fields(self, values):
-        self._set_fields(values, 'DATA')
+        self._set_fields(values, kw.orient_as_data_field)
 
     def add_data_field(self, field_name, data_func=None):
-        self._add_fields([field_name], 'DATA')
+        self._add_fields([field_name], kw.orient_as_data_field)
         if data_func:
             if data_func in self.KW_DATA_FUNCTIONS:
                 #TODO: Should adding an already existing data field
@@ -1073,39 +1067,36 @@ class PivotTable(object):
                 raise Exception("Invalid function %s for data field." % data_func)
 
     def _get_fields(self, orientation):
-        if orientation == 'ROW':
-            xlFields = self.xl.row_fields()
-        elif orientation == 'COLUMN':
-            xlFields = self.xl.column_fields()
-        elif orientation == 'DATA':
-            xlFields = self.xl.data_fields()
+        if orientation == kw.orient_as_row_field:
+            xlfields = self.xl.row_fields()
+        elif orientation == kw.orient_as_column_field:
+            xlfields = self.xl.column_fields()
+        elif orientation == kw.orient_as_data_field:
+            xlfields = self.xl.data_fields()
+        elif orientation == kw.orient_as_page_field:
+            xlfields = self.xl.page_fields()
         else:
-            xlFields = self.xl.page_fields()
+            raise Exception("Invalid field orientation %s" % orientation)
 
-        if xlFields == kw.missing_value:
-            return []
+        return self._field_names(xlfields)
 
-        return [field.name() for field in xlFields]
+    def _field_names(self, xlfields):
+        return [] if xlfields == kw.missing_value else [xlfield.name() for xlfield in xlfields]
 
     def _set_fields(self, values, orientation):
         self._hide_all_fields(orientation)
         self._add_fields(values, orientation)
 
     def _add_fields(self, values, orientation):
-        #TODO: Why can't we just use values?
-        new_fields = self._get_fields(orientation) + values
-        for field_name in new_fields:
-            self.xl.pivot_fields[field_name].pivot_field_orientation.set(PivotTable.KW_ORIENTATION[orientation])
+        for field_name in values:
+            self.xl.pivot_fields[field_name].pivot_field_orientation.set(orientation)
 
     def hide_field(self, field_name):
-        for field in self.xl.pivot_fields() + self.xl.data_fields():
-            if field.name() == field_name:
-                field.pivot_field_orientation.set(kw.orient_as_hidden)
-                return
+        self.xl.pivot_fields[field_name].pivot_field_orientation.set(kw.orient_as_hidden)
 
     def _hide_all_fields(self, orientation):
         for field_name in self._get_fields(orientation):
-            self.xl.pivot_fields[field_name].pivot_field_orientation.set(kw.orient_as_hidden)
+            self.hide_field(field_name)
 
     def delete(self):
         self.xl.table_range2.delete()
