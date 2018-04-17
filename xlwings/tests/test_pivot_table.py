@@ -89,24 +89,52 @@ class test_pivot_table(unittest.TestCase):
 		self.pt.delete()
 		self.assertEqual(0, len(self.pts))
 
-	def test_hide_field(self):
+	def test_hide_column_field(self):
 		self.pt.hide_field('Age')
 		assert 'Age' not in self.pt.column_fields
 
+	def test_hide_row_field(self):
+		self.pt.hide_field('Name')
+		assert 'Name' not in self.pt.row_fields
+
+	def test_hide_page_field(self):
+		self.pt.hide_field('Arg1')
+		assert 'Arg1' not in self.pt.page_fields
+
+	def test_hide_data_field(self):
 		self.pt.hide_field('Sum of Arg2')
 		assert 'Sum of Arg2' not in self.pt.data_fields
 
-	def set_row_fields(self):
-		pass
+	def test_set_row_fields(self):
+		self.pt.row_fields = []
+		self.assertEqual([], self.pt.row_fields)
 
-	def set_column_fields(self):
-		pass
+		self.pt.row_fields = ['Age', 'Name']
+		self.assertEqual(2, len(self.pt.row_fields))
+		self.assertEqual(['Age', 'Name'], sorted(self.pt.row_fields))
 
-	def set_page_fields(self):
-		pass
+	def test_set_column_fields(self):
+		self.pt.column_fields = []
+		self.assertEqual([], self.pt.column_fields)
 
-	def set_data_fields(self):
-		pass
+		self.pt.column_fields = ['Age', 'Name']
+		self.assertEqual(2, len(self.pt.column_fields))
+		self.assertEqual(['Age', 'Name'], sorted(self.pt.column_fields))
+
+	def test_set_page_fields(self):
+		self.pt.page_fields = []
+		self.assertEqual([], self.pt.page_fields)
+
+		self.pt.page_fields = ['Age', 'Name']
+		self.assertEqual(2, len(self.pt.page_fields))
+		self.assertEqual(['Age', 'Name'], sorted(self.pt.page_fields))
+
+	def test_set_data_fields(self):
+		self.pt.data_fields = []
+		self.assertEqual([], self.pt.data_fields)
+
+		self.pt.data_fields = ['Age', 'Name']
+		self.assertEqual(2, len(self.pt.data_fields))
 
 
 if __name__ == '__main__':
