@@ -641,6 +641,10 @@ class Sheet(object):
     def pictures(self):
         return Pictures(xl=self.xl.Pictures())
 
+    @property
+    def pivot_tables(self):
+        return PivotTables(self.xl.PivotTables())
+
 
 class Range(object):
 
@@ -1323,6 +1327,145 @@ class Pictures(Collection):
             Height=height
         ).DrawingObject)
 
+class PivotTable(object):
+
+    def __init__(self, xl):
+        self.xl = xl
+
+    @property
+    def sheet(self):
+        return self.xl.Parent
+
+    @property
+    def api(self):
+        return self.xl
+
+    @property
+    def name(self):
+        return self.xl.Name
+
+    @name.setter
+    def name(self, value):
+        self.xl.Name = value
+
+    @property
+    def row_fields(self):
+        return [rf.Name for rf in self.xl.RowFields]
+
+    @row_fields.setter
+    def row_fields(self, values):
+        ''' Takes in a list of field names '''
+        xlorient = pivot_table_fields['RowFields']
+        self._hide_all_fields('RowFields')
+        self._set_fields(values, xlorient)
+
+    def add_row_field(self, field_name):
+        xlorient = pivot_table_fields['RowFields']
+        self._add_fields([field_name], xlorient)
+
+    @property
+    def column_fields(self):
+        return [cf.Name for cf in self.xl.ColumnFields]
+
+    @column_fields.setter
+    def column_fields(self, values):
+        xlorient = pivot_table_fields['ColumnFields']
+        self._hide_all_fields('ColumnFields')
+        self._set_fields(values, xlorient)
+
+    def add_column_field(self, field_name):
+        self._add_fields([field_name], pivot_table_fields['ColumnFields'])
+
+    @property
+    def page_fields(self):
+        return [pf.Name for pf in self.xl.PageFields]
+
+    @page_fields.setter
+    def page_fields(self, values):
+        xlorient = pivot_table_fields['PageFields']
+        self._hide_all_fields('PageFields')
+        self._set_fields(values, xlorient)
+
+    def add_page_field(self, field_name):
+        self._add_fields([field_name], pivot_table_fields['PageFields'])
+
+    @property
+    def data_fields(self):
+        return [df.Name for df in self.xl.DataFields]
+
+    @data_fields.setter
+    def data_fields(self, values):
+        xlorient = pivot_table_fields['DataFields']
+        self._hide_all_fields('DataFields')
+        self._set_fields(values, xlorient)
+
+    def add_data_field(self, field_name, data_func=None):
+        if data_func not in pivot_table_functions:
+            raise Exception("{} is not a valid data field function. Make sure you are using the right format.".format(data_func))
+
+        xl_field = self.xl.PivotFields(field_name)
+        xl_field.Orientation = pivot_table_fields['DataFields']
+        xl_field.Function = pivot_table_functions[data_func]
+
+    def _get_fields(self, orientation):
+        xlfields = getattr(self.xl, orientation)
+        return xlfields
+
+    def _field_names(self, xlfields):
+        raise NotImplementedError()
+
+    def _set_fields(self, values, orientation):
+        self._add_fields(values, orientation)
+
+    def _add_fields(self, values, orientation):
+        for field_name in values:
+            xl_field = self.xl.PivotFields(field_name)
+            self._add_field(xl_field, orientation)
+
+    def _add_field(self, xl_field, orientation):
+        xl_field.Orientation = orientation
+
+    def hide_field(self, field_name):
+        self.xl.PivotFields(field_name).Orientation = pivot_table_fields['Hidden']
+
+    def _hide_all_fields(self, orientation):
+        for field in self._get_fields(orientation):
+            field.Orientation = pivot_table_fields['Hidden']
+
+    @property
+    def TableRange2(self):
+        return Range(self.xl.TableRange2)
+
+    @property
+    def TableRange1(self):
+        return Range(self.xl.TableRange1)
+
+    def delete(self):
+        self.TableRange2.clear()
+
+
+class PivotTables(Collection):
+
+    _wrap = PivotTable
+
+    @property
+    def api(self):
+        return None
+
+    def add(self, src_range, dest_range, row_fields=[], column_fields=[],
+            page_fields=[], data_fields=[], row_grand=True, column_grand=True):
+
+        pivotCache = self.xl.Parent.Parent.PivotCaches().Create(SourceType=1, SourceData=src_range.api)
+        xlpt = pivotCache.CreatePivotTable(TableDestination=dest_range.api)
+
+        pt = PivotTable(xlpt)
+        pt.row_fields = row_fields
+        pt.column_fields = column_fields
+        pt.page_fields = page_fields
+        pt.data_fields = data_fields
+
+        return PivotTable(xlpt)
+
 
 class Names(object):
     def __init__(self, xl):
@@ -1521,3 +1664,24 @@ shape_types_s2i = {
 }
 
 shape_types_i2s = {v: k for k, v in shape_types_s2i.items()}
+
+pivot_table_fields = {
+    'Hidden': 0,
+    'RowFields': 1,
+    'ColumnFields': 2,
+    'PageFields': 3,
+    'DataFields': 4
+}
+
+pivot_table_functions = {
+    'COUNT':-4112,
+    'COUNT_NUMS':-4113,
+    'SUM':-4157,
+    'MAX':-4136,
+    'MIN':-4139,
+    'AVERAGE':-4106,
+    'STD_DEV':-4155,
+    'STD_DEV_P':-4156,
+    'VAR':-4164,
+    'VAR_P':-4165,
+}

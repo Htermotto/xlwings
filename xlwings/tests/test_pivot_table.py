@@ -1,12 +1,14 @@
 import sys
-sys.path.append(r'/Users/Harrison/anaconda3/envs/XLWingsDev/xlwings/')
+# sys.path.append(r'/Users/Harrison/anaconda3/envs/XLWingsDev/xlwings/')
+sys.path.append(r'C:\PYTHON\Python36-32\envs\xlwingsDev\xlwings')
 import xlwings as xw
 from xlwings.tests.common import TestBase, this_dir
 import unittest
 from parameterized import parameterized
 
 test_sheet = 'test_pivot.xlsx'
-SPEC = '/Applications/Microsoft Office 2011/Microsoft Excel.app'
+# SPEC = '/Applications/Microsoft Office 2011/Microsoft Excel.app'
+SPEC = None
 
 
 class test_pivot_table(unittest.TestCase):

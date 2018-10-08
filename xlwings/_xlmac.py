@@ -1102,38 +1102,6 @@ class PivotTable(object):
         self.xl.table_range2.delete()
 
 
-class Names(object):
-    def __init__(self, parent, xl):
-        self.parent = parent
-        self.xl = xl
-
-    def __call__(self, name_or_index):
-        return Name(self.parent, xl=self.xl[name_or_index])
-
-    def contains(self, name_or_index):
-        try:
-            self.xl[name_or_index].get()
-        except appscript.reference.CommandError as e:
-            # TODO: make more specific
-            return False
-        return True
-
-    def __len__(self):
-        named_items = self.xl.get()
-        if named_items == kw.missing_value:
-            return 0
-        else:
-            return len(named_items)
-
-    def add(self, name, refers_to):
-        return Name(self.parent, self.parent.xl.make(at=self.parent.xl,
-                                                     new=kw.named_item,
-                                                     with_properties={
-                                                         kw.references: refers_to,
-                                                         kw.name: name
-                                                     }))
-
-
 class PivotTables(Collection):
 
     _attr = 'pivot_tables'
@@ -1167,6 +1135,37 @@ class PivotTables(Collection):
 
         return pt
 
+
+class Names(object):
+    def __init__(self, parent, xl):
+        self.parent = parent
+        self.xl = xl
+
+    def __call__(self, name_or_index):
+        return Name(self.parent, xl=self.xl[name_or_index])
+
+    def contains(self, name_or_index):
+        try:
+            self.xl[name_or_index].get()
+        except appscript.reference.CommandError as e:
+            # TODO: make more specific
+            return False
+        return True
+
+    def __len__(self):
+        named_items = self.xl.get()
+        if named_items == kw.missing_value:
+            return 0
+        else:
+            return len(named_items)
+
+    def add(self, name, refers_to):
+        return Name(self.parent, self.parent.xl.make(at=self.parent.xl,
+                                                     new=kw.named_item,
+                                                     with_properties={
+                                                         kw.references: refers_to,
+                                                         kw.name: name
+                                                     }))
 
 class Name(object):
     def __init__(self, parent, xl):
